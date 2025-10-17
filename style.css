@@ -738,5 +738,8 @@ body{
 }
 
 
-
+.image{
+    display: flex;
+    width: 60vw;
+}
 
