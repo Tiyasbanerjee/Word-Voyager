@@ -107,7 +107,6 @@ The X-axis represents Hardness Level, and the Y-axis represents the number of wo
 #### Analysis of the Graph
 
 * **Categorized Difficulty**: Words are sorted into distinct groups, ensuring a true step-up in difficulty between levels.
-* **Categorized Difficulty**: Words are sorted into distinct groups, ensuring a true step-up in difficulty between levels.
 * **Focus on Mastery**: The majority of challenging content is in the middle scores, supporting the intermediate levels.
 
 ![Score Analysis](src_imgs/v_6.png)
