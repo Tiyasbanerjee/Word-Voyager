@@ -1,4 +1,5 @@
-# 🌌 Word Voyager 
+# 🌌 Word Voyager
+
 <h1>Game link:--- <a href="https://tiyasbanerjee.github.io/Word-Voyager/">|O|</a></h1>
 
 > **"A language is a doorway to a new way of thinking."**
@@ -144,17 +145,17 @@ The data forms a clear, symmetrical bell curve.
 ### 1. Setup Your Voyage
 
 Customize your experience. Select your starting level, the number of questions, and toggle **Hardcore Mode** for the ultimate 5-second challenge.
-![Setup Screen](public/src_imgs/setup_guide.png)
+![Setup Screen](src_imgs/setup_guide.png)
 
 ### 2. The Game Interface
 
 Focus on the meaning. Watch the timer. Select the correct word before time runs out.
-![Game Screen](public/src_imgs/game_guide.png)
+![Game Screen](src_imgs/game_guide.png)
 
 ### 3. Track Your Growth
 
 Analyze your performance. The graph shows both your score accumulation and your "Growth" (Speed + Accuracy) over time.
-![Result Screen](public/src_imgs/result_guide.png)
+![Result Screen](src_imgs/result_guide.png)
 
 ---
 
@@ -164,20 +165,19 @@ The project is organized for clean deployment and maintainability.
 
 ```text
 Word-Voyager/
-├── public/                  # The core deployable game folder
-│   ├── index.html           # The main game interface (Setup, Game, Result screens)
-│   ├── style.css            # Cyberpunk styling, glassmorphism, and responsive layout
-│   ├── script.js            # Game logic, state management, and adaptive algorithms
-│   ├── data/                # JSON files containing the question database
-│   │   ├── level_1.json     # Beginner vocabulary
-│   │   └── ...              # Levels 2-10
-│   ├── sound/               # Audio assets
-│   │   ├── 2.mp3            # Background ambience
-│   │   ├── Right.mp3        # Success sound effect
-│   │   └── Wrong.mp3        # Failure sound effect
-│   ├── src_font/            # Custom typography
-│   │   └── normal.ttf       # The game's primary font
-│   └── src_imgs/            # Visual assets for documentation
+├── index.html           # The main game interface (Setup, Game, Result screens)
+├── style.css            # Cyberpunk styling, glassmorphism, and responsive layout
+├── script.js            # Game logic, state management, and adaptive algorithms
+├── data/                # JSON files containing the question database
+│   ├── level_1.json     # Beginner vocabulary
+│   └── ...              # Levels 2-10
+├── sound/               # Audio assets
+│   ├── 2.mp3            # Background ambience
+│   ├── Right.mp3        # Success sound effect
+│   └── Wrong.mp3        # Failure sound effect
+├── src_font/            # Custom typography
+│   └── normal.ttf       # The game's primary font
+├── src_imgs/            # Visual assets for documentation
 └── README.md                # This documentation file
 ```
 
