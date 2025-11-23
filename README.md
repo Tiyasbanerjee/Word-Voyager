@@ -4,7 +4,7 @@
 
 > **"A language is a doorway to a new way of thinking."**
 
-![Banner Image](public/src_imgs/banner.png)
+![Banner Image](src_imgs/banner.png)
 
 **Word Voyager** is an adaptive, progressive English vocabulary game specifically designed for Bengali speakers.
 
@@ -75,7 +75,7 @@ We analyzed the data based on **Word Length** and **Complexity**.
 
 This graph shows the makeup of the vocabulary based on character length.
 
-![Word Length Distribution](public/src_imgs/pre_v_1.png)
+![Word Length Distribution](src_imgs/pre_v_1.png)
 
 * **The Core Vocabulary (The Most Words)**: The tallest bars (8-10 chars) represent the "sweet spot" for intermediate English. Over 40% of the list falls here, ensuring endless variety in the middle levels (4-8).
 * **The Easy Words**: Short words (1-6 chars) are for Introductory Levels (1-3) to build confidence.
@@ -85,14 +85,14 @@ This graph shows the makeup of the vocabulary based on character length.
 
 This chart visually confirms the data efficiency.
 
-![Pie Chart](public/src_imgs/pre_v_2.png)
+![Pie Chart](src_imgs/pre_v_2.png)
 
 The largest data volume is intentionally concentrated in the 8-to-10 character range, optimizing the dataset for practical vocabulary rather than simple or extremely rare words.
 
-![Pie Chart Colors](public/src_imgs/pre_v_3.png)
+![Pie Chart Colors](src_imgs/pre_v_3.png)
 *(Percentages of the elements in the pie chart)*
 
-![Pie Chart Legend](public/src_imgs/v_3.png)
+![Pie Chart Legend](src_imgs/v_3.png)
 
 ### 3. The "Hardness" Score
 
@@ -102,39 +102,40 @@ We assigned a "Hardness Score" to every single word.
 
 The X-axis represents Hardness Level, and the Y-axis represents the number of words.
 
-![Score vs Size](public/src_imgs/v_9.png)
+![Score vs Size](src_imgs/v_9.png)
 
 #### Analysis of the Graph
 
 * **Categorized Difficulty**: Words are sorted into distinct groups, ensuring a true step-up in difficulty between levels.
+* **Categorized Difficulty**: Words are sorted into distinct groups, ensuring a true step-up in difficulty between levels.
 * **Focus on Mastery**: The majority of challenging content is in the middle scores, supporting the intermediate levels.
 
-![Score Analysis](public/src_imgs/v_6.png)
+![Score Analysis](src_imgs/v_6.png)
 
 #### Normalization (Percentage Calculation)
 
 We converted raw counts to percentages to make the distribution comparable. The 10 bars shown cover 86% of the data.
 
-![Normalization](public/src_imgs/v_7.png)
+![Normalization](src_imgs/v_7.png)
 
 #### Observations
 
 The data confirms that specific groups hold the most words, validating our level design.
 
-![Observations](public/src_imgs/v_8.png)
-![Integer Percentages](public/src_imgs/v_1.png)
+![Observations](src_imgs/v_8.png)
+![Integer Percentages](src_imgs/v_1.png)
 
 #### Score Distribution with Mean Line
 
 The horizontal red dashed line represents the Average Expected Word Count if the data were divided equally.
 
-![Mean Line](public/src_imgs/v_2.png)
+![Mean Line](src_imgs/v_2.png)
 
 #### Grouped Score Distribution (The Bell Curve)
 
 The data forms a clear, symmetrical bell curve.
 
-![Grouped Distribution](public/src_imgs/10.png)
+![Grouped Distribution](src_imgs/10.png)
 
 * **Validation**: The curve peaks in the 61-70 score range (~77,000 entries), confirming that the core levels are supported by the greatest volume of diverse content.
 
