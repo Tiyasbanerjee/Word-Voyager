@@ -1,0 +1,32 @@
+<section class="game-page floating-enter">
+    <header class="game-head card-3d layer-soft">
+        <div class="stat-tile">
+            <span class="stat-label">Score</span>
+            <strong id="score-display">0</strong>
+        </div>
+
+        <div class="timer-cluster">
+            <div class="timer-track">
+                <div id="timer-bar"></div>
+            </div>
+            <div id="timer-text">--</div>
+        </div>
+
+        <div class="stat-tile">
+            <span class="stat-label">Progress</span>
+            <strong id="progress-display">1/10</strong>
+        </div>
+    </header>
+
+    <article class="question-panel card-3d layer-strong">
+        <p class="question-kicker">Translate the Bengali meaning:</p>
+        <h2 id="question-text">Loading question...</h2>
+    </article>
+
+    <section id="options-container" class="options-grid"></section>
+
+    <section id="feedback-area" class="feedback feedback-hidden card-3d">
+        <p id="feedback-message"></p>
+        <button id="next-btn" class="btn btn-primary">Next Question</button>
+    </section>
+</section>

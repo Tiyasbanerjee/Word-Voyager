@@ -1,28 +1,37 @@
-// Game State Management
-const GameState = {
+const STORAGE_KEYS = {
+    sessionHistory: 'wv_sessionHistory',
+    cumulativeScore: 'wv_cumulativeScore'
+};
+
+function loadStoredHistory() {
+    try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEYS.sessionHistory)) || [];
+    } catch {
+        return [];
+    }
+}
+
+function loadStoredScore() {
+    const score = Number(localStorage.getItem(STORAGE_KEYS.cumulativeScore));
+    return Number.isFinite(score) ? score : 0;
+}
+
+export const gameState = {
     score: 0,
     level: 1,
     totalQuestions: 10,
     currentQuestionIndex: 0,
     isHardcore: false,
-    questions: [], // Current game questions
-    wrongAnswers: [], // List of failed questions to retry
-    timer: null,
-    timeLeft: 0,
-    maxTime: 0,
-    startTime: 0,
     isPlaying: false,
-
-    // Persistent Session Data (Loaded from LocalStorage)
-    sessionHistory: JSON.parse(localStorage.getItem('wv_sessionHistory')) || [],
-    cumulativeScore: parseInt(localStorage.getItem('wv_cumulativeScore')) || 0
-};
-
-// DOM Elements
-const screens = {
-    setup: document.getElementById('setup-screen'),
-    game: document.getElementById('game-screen'),
-    result: document.getElementById('result-screen')
+    currentQuestion: null,
+    roundQuestions: [],
+    wrongAnswers: [],
+    timer: null,
+    maxTime: 0,
+    timeLeft: 0,
+    startTime: 0,
+    sessionHistory: loadStoredHistory(),
+    cumulativeScore: loadStoredScore()
 };
 
 const audio = {
@@ -31,329 +40,232 @@ const audio = {
     wrong: document.getElementById('sfx_wrong')
 };
 
-// Setup Controls
-const levelInput = document.getElementById('level-select');
-const levelDisplay = document.getElementById('level-display');
-const qCountInputs = document.getElementsByName('q-count');
-const customCountInput = document.getElementById('custom-count-input');
-const hardcoreInput = document.getElementById('hardcore-mode');
-
-// Game Elements
-const scoreDisplay = document.getElementById('score-display');
-const progressDisplay = document.getElementById('progress-display');
-const timerBar = document.getElementById('timer-bar');
-const timerText = document.getElementById('timer-text');
-const questionText = document.getElementById('question-text');
-const optionsContainer = document.getElementById('options-container');
-const feedbackArea = document.getElementById('feedback-area');
-const feedbackMessage = document.getElementById('feedback-message');
-const nextBtn = document.getElementById('next-btn');
-
-// Chart
 let progressChart = null;
 
-// --- Initialization ---
-function init() {
-    // Setup Screen Event Listeners
-    levelInput.addEventListener('input', (e) => {
-        levelDisplay.textContent = `Level ${e.target.value}`;
-    });
-
-    Array.from(qCountInputs).forEach(radio => {
-        radio.addEventListener('change', (e) => {
-            customCountInput.disabled = e.target.value !== 'custom';
-        });
-    });
-
-    document.getElementById('start-btn').addEventListener('click', startGame);
-    document.getElementById('about-btn').addEventListener('click', () => document.getElementById('about-modal').showModal());
-    document.getElementById('close-about').addEventListener('click', () => document.getElementById('about-modal').close());
-
-    nextBtn.addEventListener('click', nextQuestion);
-
-    // Soft Reset: Keep history, go back to setup
-    document.getElementById('restart-btn').addEventListener('click', () => {
-        switchScreen('setup');
-    });
-
-    // Hard Reset: Reload page
-    document.getElementById('home-btn').addEventListener('click', () => location.reload());
+export function persistSession() {
+    localStorage.setItem(STORAGE_KEYS.sessionHistory, JSON.stringify(gameState.sessionHistory));
+    localStorage.setItem(STORAGE_KEYS.cumulativeScore, String(gameState.cumulativeScore));
 }
 
-// --- Game Logic ---
-
-function startGame() {
-    // 1. Get Settings
-    GameState.level = parseInt(levelInput.value);
-
-    let selectedCount = Array.from(qCountInputs).find(r => r.checked).value;
-    GameState.totalQuestions = selectedCount === 'custom' ? parseInt(customCountInput.value) : parseInt(selectedCount);
-
-    GameState.isHardcore = hardcoreInput.checked;
-
-    // 2. Reset Round State (But keep session history)
-    GameState.score = 0;
-    GameState.currentQuestionIndex = 0;
-    GameState.questions = []; // Clear current round questions
-    GameState.wrongAnswers = [];
-    GameState.isPlaying = true;
-
-    // 3. UI Transition
-    switchScreen('game');
-    audio.bg.volume = 0.3;
-    audio.bg.play().catch(e => console.log("Audio play failed:", e));
-
-    // 4. Load First Question
-    loadQuestion();
+export function resetRound(config) {
+    gameState.level = config.level;
+    gameState.totalQuestions = config.totalQuestions;
+    gameState.isHardcore = Boolean(config.isHardcore);
+    gameState.score = 0;
+    gameState.currentQuestionIndex = 0;
+    gameState.currentQuestion = null;
+    gameState.roundQuestions = [];
+    gameState.wrongAnswers = [];
+    gameState.isPlaying = true;
+    clearRoundTimer();
 }
 
-function switchScreen(screenName) {
-    Object.values(screens).forEach(s => s.classList.remove('active'));
-    screens[screenName].classList.add('active');
-}
-
-async function loadQuestion() {
-    // Reset UI
-    optionsContainer.innerHTML = '';
-    feedbackArea.classList.add('feedback-hidden');
-    questionText.textContent = "Loading...";
-
-    // Update Stats
-    scoreDisplay.textContent = GameState.score;
-    progressDisplay.textContent = `${GameState.currentQuestionIndex + 1}/${GameState.totalQuestions}`;
-
-    // Determine Level based on Score (Adaptive)
-    let currentLevel = Math.min(10, Math.max(1, GameState.level + Math.floor(GameState.score / 100)));
-
-    // Binary Choice: New Question (1) or Retry Wrong (0)
-    let useNewQuestion = 1;
-    if (GameState.wrongAnswers.length > 0) {
-        useNewQuestion = Math.random() < 0.5 ? 0 : 1;
+export function clearRoundTimer() {
+    if (gameState.timer) {
+        clearInterval(gameState.timer);
+        gameState.timer = null;
     }
+}
 
-    let questionData;
+export function startRoundTimer(onTick, onEnd) {
+    clearRoundTimer();
 
-    if (useNewQuestion === 1 || GameState.wrongAnswers.length === 0) {
-        try {
-            const response = await fetch(`data/level_${currentLevel}.json`);
-            const data = await response.json();
-            questionData = generateQuestionFromData(data);
-        } catch (error) {
-            console.error("Failed to load level data:", error);
-            questionText.textContent = "Error loading data. Please restart.";
+    gameState.maxTime = gameState.isHardcore ? 5 : 30;
+    gameState.timeLeft = gameState.maxTime;
+    gameState.startTime = Date.now();
+
+    onTick(getTimerSnapshot());
+
+    gameState.timer = setInterval(() => {
+        gameState.timeLeft -= 0.1;
+
+        if (gameState.timeLeft <= 0) {
+            gameState.timeLeft = 0;
+            onTick(getTimerSnapshot());
+            clearRoundTimer();
+            onEnd();
             return;
         }
-    } else {
-        const index = Math.floor(Math.random() * GameState.wrongAnswers.length);
-        questionData = GameState.wrongAnswers.splice(index, 1)[0];
-    }
 
-    renderQuestion(questionData);
+        onTick(getTimerSnapshot());
+    }, 100);
 }
 
-function generateQuestionFromData(data) {
+export function getTimerSnapshot() {
+    const pct = gameState.maxTime > 0 ? (gameState.timeLeft / gameState.maxTime) * 100 : 0;
+    return {
+        seconds: Math.ceil(gameState.timeLeft),
+        percent: Math.max(0, pct)
+    };
+}
+
+export function elapsedSeconds() {
+    return (Date.now() - gameState.startTime) / 1000;
+}
+
+export function getEffectiveLevel() {
+    return Math.min(10, Math.max(1, gameState.level + Math.floor(gameState.score / 100)));
+}
+
+export function shouldLoadNewQuestion() {
+    if (gameState.wrongAnswers.length === 0) {
+        return true;
+    }
+    return Math.random() >= 0.5;
+}
+
+export async function loadLevelData(level) {
+    const response = await fetch(`data/level_${level}.json`);
+    if (!response.ok) {
+        throw new Error(`Failed to load level ${level}`);
+    }
+    return response.json();
+}
+
+export function generateQuestionFromData(data) {
     const keys = Object.keys(data);
     const correctKey = keys[Math.floor(Math.random() * keys.length)];
     const question = data[correctKey];
 
     const distractors = [];
     while (distractors.length < 3) {
-        const randKey = keys[Math.floor(Math.random() * keys.length)];
-        if (randKey !== correctKey && !distractors.includes(randKey)) {
-            distractors.push(randKey);
+        const randomKey = keys[Math.floor(Math.random() * keys.length)];
+        if (randomKey !== correctKey && !distractors.includes(randomKey)) {
+            distractors.push(randomKey);
         }
     }
 
     return {
-        question: question,
+        question,
         correctAnswer: correctKey,
         options: shuffleArray([correctKey, ...distractors])
     };
 }
 
-function renderQuestion(qData) {
-    GameState.currentQuestion = qData;
-    questionText.textContent = qData.question;
-
-    qData.options.forEach(opt => {
-        const btn = document.createElement('button');
-        btn.className = 'option-btn';
-        btn.textContent = opt;
-        btn.onclick = () => handleAnswer(opt, btn);
-        optionsContainer.appendChild(btn);
-    });
-
-    startTimer();
+export function getRetryQuestion() {
+    const index = Math.floor(Math.random() * gameState.wrongAnswers.length);
+    return gameState.wrongAnswers.splice(index, 1)[0];
 }
 
-function startTimer() {
-    if (GameState.timer) clearInterval(GameState.timer);
-
-    GameState.maxTime = GameState.isHardcore ? 5 : 30;
-    GameState.timeLeft = GameState.maxTime;
-    GameState.startTime = Date.now();
-
-    updateTimerUI();
-
-    GameState.timer = setInterval(() => {
-        GameState.timeLeft -= 0.1;
-        updateTimerUI();
-
-        if (GameState.timeLeft <= 0) {
-            clearInterval(GameState.timer);
-            handleTimeout();
-        }
-    }, 100);
-}
-
-function updateTimerUI() {
-    const pct = (GameState.timeLeft / GameState.maxTime) * 100;
-    timerBar.style.width = `${pct}%`;
-    timerBar.style.backgroundColor = pct < 30 ? 'var(--accent-danger)' : 'var(--accent-primary)';
-    timerText.textContent = Math.ceil(GameState.timeLeft) + 's';
-}
-
-function saveData() {
-    localStorage.setItem('wv_sessionHistory', JSON.stringify(GameState.sessionHistory));
-    localStorage.setItem('wv_cumulativeScore', GameState.cumulativeScore);
-}
-
-function handleAnswer(selectedOption, btnElement) {
-    clearInterval(GameState.timer);
-    const timeTaken = (Date.now() - GameState.startTime) / 1000;
-    const isCorrect = selectedOption === GameState.currentQuestion.correctAnswer;
-
-    Array.from(optionsContainer.children).forEach(b => b.disabled = true);
+export function recordQuestion({ isCorrect, timeTaken }) {
+    const growth = isCorrect ? Math.max(0, gameState.maxTime - timeTaken) : 0;
 
     if (isCorrect) {
-        btnElement.classList.add('correct');
-        audio.correct.play();
-        GameState.score += 10;
-        GameState.cumulativeScore += 10;
-        feedbackMessage.textContent = "Correct! Well done.";
-        feedbackMessage.style.color = "var(--accent-success)";
+        gameState.score += 10;
+        gameState.cumulativeScore += 10;
     } else {
-        btnElement.classList.add('wrong');
-        Array.from(optionsContainer.children).forEach(b => {
-            if (b.textContent === GameState.currentQuestion.correctAnswer) {
-                b.classList.add('correct');
-            }
-        });
-        audio.wrong.play();
-        GameState.score -= 5;
-        GameState.cumulativeScore -= 5;
-        feedbackMessage.innerHTML = `Wrong! The correct answer is <strong>${GameState.currentQuestion.correctAnswer}</strong>`;
-        feedbackMessage.style.color = "var(--accent-danger)";
-
-        GameState.wrongAnswers.push(GameState.currentQuestion);
+        gameState.score -= 5;
+        gameState.cumulativeScore -= 5;
     }
 
-    const growth = isCorrect ? Math.max(0, GameState.maxTime - timeTaken) : 0;
-
-    const questionRecord = {
-        index: GameState.sessionHistory.length + 1,
-        isCorrect: isCorrect,
-        timeTaken: timeTaken,
-        growth: growth,
-        score: GameState.score,
-        cumulativeScore: GameState.cumulativeScore
+    const record = {
+        index: gameState.sessionHistory.length + 1,
+        isCorrect,
+        timeTaken,
+        growth,
+        score: gameState.score,
+        cumulativeScore: gameState.cumulativeScore
     };
 
-    GameState.questions.push(questionRecord);
-    GameState.sessionHistory.push(questionRecord);
-    saveData(); // Save to LocalStorage
-
-    scoreDisplay.textContent = GameState.score;
-    feedbackArea.classList.remove('feedback-hidden');
+    gameState.roundQuestions.push(record);
+    gameState.sessionHistory.push(record);
+    persistSession();
+    return record;
 }
 
-function handleTimeout() {
-    Array.from(optionsContainer.children).forEach(b => b.disabled = true);
+export function nextQuestionIndex() {
+    gameState.currentQuestionIndex += 1;
+    return gameState.currentQuestionIndex;
+}
 
-    Array.from(optionsContainer.children).forEach(b => {
-        if (b.textContent === GameState.currentQuestion.correctAnswer) {
-            b.classList.add('correct');
-        }
+export function setCurrentQuestion(question) {
+    gameState.currentQuestion = question;
+}
+
+export function addWrongQuestion(question) {
+    gameState.wrongAnswers.push(question);
+}
+
+export function endRound() {
+    gameState.isPlaying = false;
+    clearRoundTimer();
+}
+
+export function getRoundSummary() {
+    const answered = gameState.roundQuestions.length;
+    const correct = gameState.roundQuestions.filter((q) => q.isCorrect).length;
+    const accuracy = answered > 0 ? Math.round((correct / answered) * 100) : 0;
+
+    return {
+        finalScore: gameState.score,
+        accuracy,
+        answered,
+        total: gameState.totalQuestions,
+        correct
+    };
+}
+
+export function playBackgroundAudio() {
+    if (!audio.bg) return;
+    audio.bg.volume = 0.22;
+    audio.bg.play().catch(() => {
+        // Browser autoplay restrictions are expected on first interaction.
     });
-
-    audio.wrong.play();
-    GameState.score -= 5;
-    GameState.cumulativeScore -= 5;
-    feedbackMessage.innerHTML = `Time's Up! The answer was <strong>${GameState.currentQuestion.correctAnswer}</strong>`;
-    feedbackMessage.style.color = "var(--accent-danger)";
-
-    GameState.wrongAnswers.push(GameState.currentQuestion);
-
-    const questionRecord = {
-        index: GameState.sessionHistory.length + 1,
-        isCorrect: false,
-        timeTaken: GameState.maxTime,
-        growth: 0,
-        score: GameState.score,
-        cumulativeScore: GameState.cumulativeScore
-    };
-
-    GameState.questions.push(questionRecord);
-    GameState.sessionHistory.push(questionRecord);
-    saveData(); // Save to LocalStorage
-
-    scoreDisplay.textContent = GameState.score;
-    feedbackArea.classList.remove('feedback-hidden');
 }
 
-function nextQuestion() {
-    GameState.currentQuestionIndex++;
-
-    if (GameState.currentQuestionIndex >= GameState.totalQuestions) {
-        endGame();
-    } else {
-        loadQuestion();
-    }
-}
-
-function endGame() {
-    switchScreen('result');
+export function stopBackgroundAudio() {
+    if (!audio.bg) return;
     audio.bg.pause();
-
-    document.getElementById('final-score').textContent = GameState.score;
-
-    const correctCount = GameState.questions.filter(q => q.isCorrect).length;
-    const accuracy = Math.round((correctCount / GameState.totalQuestions) * 100);
-    document.getElementById('final-accuracy').textContent = `${accuracy}%`;
-
-    renderChart();
 }
 
-function renderChart() {
-    const ctx = document.getElementById('progress-chart').getContext('2d');
+export function playCorrectSound() {
+    if (!audio.correct) return;
+    audio.correct.currentTime = 0;
+    audio.correct.play().catch(() => {});
+}
 
-    // Use sessionHistory for the chart to show cumulative progress
-    const labels = GameState.sessionHistory.map(q => `Q${q.index}`);
-    const growthData = GameState.sessionHistory.map(q => q.growth);
-    const scoreData = GameState.sessionHistory.map(q => q.cumulativeScore);
+export function playWrongSound() {
+    if (!audio.wrong) return;
+    audio.wrong.currentTime = 0;
+    audio.wrong.play().catch(() => {});
+}
 
-    if (progressChart) progressChart.destroy();
+export function renderProgressChart(canvas) {
+    if (!canvas || typeof Chart === 'undefined') return;
+    const ctx = canvas.getContext('2d');
+
+    const labels = gameState.sessionHistory.map((item) => `Q${item.index}`);
+    const growthData = gameState.sessionHistory.map((item) => item.growth);
+    const scoreData = gameState.sessionHistory.map((item) => item.cumulativeScore);
+
+    if (progressChart) {
+        progressChart.destroy();
+    }
 
     progressChart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: labels,
+            labels,
             datasets: [
                 {
-                    label: 'Growth (Speed)',
+                    label: 'Growth',
                     data: growthData,
-                    borderColor: '#38bdf8',
-                    backgroundColor: 'rgba(56, 189, 248, 0.2)',
+                    borderColor: '#27a7ff',
+                    backgroundColor: 'rgba(39, 167, 255, 0.16)',
                     yAxisID: 'y',
-                    tension: 0.4
+                    borderWidth: 2,
+                    tension: 0.35,
+                    pointRadius: 2
                 },
                 {
                     label: 'Cumulative Score',
                     data: scoreData,
-                    borderColor: '#34d399',
-                    backgroundColor: 'rgba(52, 211, 153, 0.2)',
+                    borderColor: '#0ec98d',
+                    backgroundColor: 'rgba(14, 201, 141, 0.16)',
                     yAxisID: 'y1',
-                    tension: 0.4
+                    borderWidth: 2,
+                    tension: 0.35,
+                    pointRadius: 2
                 }
             ]
         },
@@ -362,45 +274,77 @@ function renderChart() {
             maintainAspectRatio: false,
             interaction: {
                 mode: 'index',
-                intersect: false,
+                intersect: false
+            },
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#3f4652'
+                    }
+                },
+                title: {
+                    display: true,
+                    text: 'Lifetime Performance',
+                    color: '#1f2735',
+                    font: {
+                        family: 'Space Grotesk'
+                    }
+                }
             },
             scales: {
                 y: {
                     type: 'linear',
-                    display: true,
                     position: 'left',
-                    title: { display: true, text: 'Growth Factor' }
+                    title: {
+                        display: true,
+                        text: 'Growth'
+                    },
+                    ticks: {
+                        color: '#616a78'
+                    },
+                    grid: {
+                        color: 'rgba(77, 105, 143, 0.18)'
+                    }
                 },
                 y1: {
                     type: 'linear',
-                    display: true,
                     position: 'right',
-                    grid: { drawOnChartArea: false },
-                    title: { display: true, text: 'Total Score' }
-                }
-            },
-            plugins: {
-                legend: {
-                    labels: { color: '#f1f5f9' }
+                    title: {
+                        display: true,
+                        text: 'Score'
+                    },
+                    grid: {
+                        drawOnChartArea: false
+                    },
+                    ticks: {
+                        color: '#616a78'
+                    }
                 },
-                title: {
-                    display: true,
-                    text: 'Lifetime Progress (Cumulative)',
-                    color: '#f1f5f9'
+                x: {
+                    ticks: {
+                        color: '#616a78'
+                    },
+                    grid: {
+                        color: 'rgba(77, 105, 143, 0.12)'
+                    }
                 }
             }
         }
     });
 }
 
-// Utils
-function shuffleArray(array) {
-    for (let i = array.length - 1; i > 0; i--) {
+export function clampQuestionCount(value) {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) {
+        return 10;
+    }
+    return Math.min(100, Math.max(5, Math.round(parsed)));
+}
+
+export function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i -= 1) {
         const j = Math.floor(Math.random() * (i + 1));
         [array[i], array[j]] = [array[j], array[i]];
     }
     return array;
 }
-
-// Start
-init();
