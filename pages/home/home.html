@@ -1,0 +1,82 @@
+<section class="home-page floating-enter">
+    <div class="home-grid">
+        <article class="hero-panel card-3d layer-strong">
+            <p class="eyebrow">Signal 01 · Language Odyssey</p>
+            <h1>Turn Every Word Into a Level You Can Beat</h1>
+            <p class="hero-copy">
+                Explore English vocabulary through adaptive challenge loops, cinematic feedback,
+                and a calm immersive interface designed for focused progress on both mobile and desktop.
+            </p>
+            <div class="hero-metrics">
+                <div class="metric-chip">
+                    <span class="metric-label">Lifetime Score</span>
+                    <strong id="lifetime-score">0</strong>
+                </div>
+                <div class="metric-chip">
+                    <span class="metric-label">Saved Entries</span>
+                    <strong id="history-count">0</strong>
+                </div>
+            </div>
+            <div class="hero-actions">
+                <button id="start-btn" class="btn btn-primary">Start Voyage</button>
+                <button id="about-btn" class="btn btn-secondary">About</button>
+            </div>
+        </article>
+
+        <article class="setup-panel card-3d layer-soft">
+            <h2>Game Setup</h2>
+
+            <label class="input-label" for="level-select">Difficulty Level</label>
+            <div class="slider-wrap">
+                <input type="range" id="level-select" min="1" max="10" value="1">
+                <div class="slider-meta">
+                    <span>Beginner</span>
+                    <strong id="level-display">Level 1</strong>
+                    <span>Advanced</span>
+                </div>
+            </div>
+
+            <fieldset class="choice-group">
+                <legend>Questions</legend>
+                <label class="radio-card">
+                    <input type="radio" name="q-count" value="10" checked>
+                    <span>10</span>
+                </label>
+                <label class="radio-card">
+                    <input type="radio" name="q-count" value="20">
+                    <span>20</span>
+                </label>
+                <label class="radio-card">
+                    <input type="radio" name="q-count" value="custom">
+                    <span>Custom</span>
+                </label>
+                <input type="number" id="custom-count-input" min="5" max="100" value="30" disabled>
+            </fieldset>
+
+            <label class="toggle-row" for="hardcore-mode">
+                <span>
+                    <strong>Hardcore Mode</strong>
+                    <small>5-second rounds, high pressure mode</small>
+                </span>
+                <span class="toggle-shell">
+                    <input type="checkbox" id="hardcore-mode">
+                    <span class="toggle-knob"></span>
+                </span>
+            </label>
+        </article>
+    </div>
+
+    <dialog id="about-modal" class="modal card-3d">
+        <h3>About Word Voyager</h3>
+        <p class="about-quote">"Words are not for memorizing only, they are tools for building new worlds."</p>
+        <p>
+            Word Voyager is built for Bengali learners who want practical English growth through
+            adaptive challenge, repeat exposure to weak words, and speed-aware feedback.
+            Created by Tiyas Banerjee.
+        </p>
+        <div class="dialog-actions">
+            <button id="close-about" class="btn btn-secondary">Close</button>
+            <a href="https://github.com/Tiyasbanerjee" target="_blank" rel="noreferrer" class="btn btn-primary">GitHub</a>
+        </div>
+    </dialog>
+</section>
