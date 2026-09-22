@@ -1,14 +1,21 @@
 import { useState } from 'react'
 import './App.css'
+import StartPage from './StartPage'
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  const [count, setCount] = useState('startpage')
 
   return (
     <>
+     
+      {
+        count==='startpage' && (
+          <StartPage/>
+        )
+      }
      
     </>
   )
 }
 
-export default App
+
