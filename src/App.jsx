@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import './App.css'
 import StartPage from './StartPage'
+import Game1 from './Game_1'
 
 export default function App() {
-  const [count, setCount] = useState('startpage')
+  const [count, setCount] = useState('Drop_word')
 
   return (
     <>
@@ -11,6 +12,12 @@ export default function App() {
       {
         count==='startpage' && (
           <StartPage/>
+        )
+      }
+
+      {
+        count==='Drop_word' && (
+          <Game1/>
         )
       }
      
